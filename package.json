@@ -1,0 +1,8 @@
+{
+  "name": "InfoRetriever Demo",
+  "version": "1.0.0",
+  "description": "Demonstration script for InfoRetriever",
+  "scripts": {
+    "demo": "python demo.py"
+  }
+}

@@ -1,0 +1,41 @@
+{
+    "input": {
+        "file": "data/documents.json",
+        "encoding": "utf-8"
+    },
+    "output": {
+        "directory": "results",
+        "original_vocab": "vocab_original.txt",
+        "preprocessed_vocab": "vocab_preprocessed.txt",
+        "stemmed_vocab": "vocab_stemmed.txt"
+    },
+    "preprocessing": {
+        "lowercase": true,
+        "remove_diacritics": true,
+        "stop_words": {
+            "use": false,
+            "language": "both"
+        },
+        "nonsense_tokens": {
+            "remove": true,
+            "min_word_length": 2
+        }
+    },
+    "stemming": {
+        "use": true,
+        "language": "cz",
+        "stemmer_path": "./czech_stemmer.py"
+    },
+    "lemmatization": {
+        "use": false,
+        "language": "cz",
+        "model_path": null
+    },
+    "pipeline_order": [
+        "tokenize",
+        "lowercase",
+        "remove_diacritics",
+        "nonsense_tokens",
+        "stemming"
+    ]
+}

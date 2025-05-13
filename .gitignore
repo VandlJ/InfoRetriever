@@ -1,0 +1,4 @@
+/InfoRetriever/data/*
+/InfoRetriever/inverted_index.json
+inverted_index.json
+/evaluation_results/*
