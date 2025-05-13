@@ -2,17 +2,23 @@ from typing import List, Dict
 import os
 import tempfile
 import subprocess
+import sys
 from .preprocess import TokenPreprocessor
 from .tokenizer import Token
+
+# Check if we're running in the CLI app (suppress messages for better UX)
+CLI_MODE = any('cli_app.py' in arg for arg in sys.argv) or any('run_cli.sh' in arg for arg in sys.argv)
 
 # Import the Czech stemmer
 try:
     from .czech_stemmer import cz_stem_word
     CZECH_STEMMER_AVAILABLE = True
-    print("Czech stemmer loaded successfully")
+    if not CLI_MODE:
+        print("Czech stemmer loaded successfully")
 except ImportError:
     CZECH_STEMMER_AVAILABLE = False
-    print("WARNING: Czech stemmer module not found")
+    if not CLI_MODE:
+        print("WARNING: Czech stemmer module not found")
 
 class StemPreprocessor(TokenPreprocessor):
     """
@@ -40,7 +46,7 @@ class StemPreprocessor(TokenPreprocessor):
         if not self.use_czech_stemmer:
             # Try to find the external stemmer binary
             self.stemmer_path = self._find_and_prepare_stemmer(stemmer_path)
-            if not self.stemmer_path:
+            if not self.stemmer_path and not CLI_MODE:
                 print("WARNING: No external stemmer found. Stemming will be limited.")
     
     def _find_and_prepare_stemmer(self, stemmer_path: str = None) -> str:
@@ -76,21 +82,23 @@ class StemPreprocessor(TokenPreprocessor):
         potential_paths = [p for p in potential_paths if p]
         
         for path in potential_paths:
-            if os.path.exists(path):
-                # Found the stemmer, make sure it's executable
-                try:
-                    # Make the file executable (chmod +x)
-                    os.chmod(path, 0o755)
-                    print(f"Found stemmer at: {path}")
-                    return path
-                except Exception as e:
-                    print(f"Found stemmer at {path} but couldn't make it executable: {e}")
+            if os.path.exists(path):                    # Found the stemmer, make sure it's executable
+                    try:
+                        # Make the file executable (chmod +x)
+                        os.chmod(path, 0o755)
+                        if not CLI_MODE:
+                            print(f"Found stemmer at: {path}")
+                        return path
+                    except Exception as e:
+                        if not CLI_MODE:
+                            print(f"Found stemmer at {path} but couldn't make it executable: {e}")
         
         # If we get here, we couldn't find the stemmer at any of the expected locations
         # Let's check if we need to build it from source
         czech_snowball_dir = os.path.join(current_dir, "CzechSnowballStemmer")
         if os.path.exists(czech_snowball_dir) and os.path.isdir(czech_snowball_dir):
-            print(f"Found CzechSnowballStemmer directory at {czech_snowball_dir}, trying to build the stemmer...")
+            if not CLI_MODE:
+                print(f"Found CzechSnowballStemmer directory at {czech_snowball_dir}, trying to build the stemmer...")
             try:
                 # Try to build the stemmer
                 build_cmd = f"cd {czech_snowball_dir} && make"
@@ -100,12 +108,15 @@ class StemPreprocessor(TokenPreprocessor):
                 built_stemmer_path = os.path.join(czech_snowball_dir, "stemmer")
                 if os.path.exists(built_stemmer_path):
                     os.chmod(built_stemmer_path, 0o755)
-                    print(f"Successfully built stemmer at: {built_stemmer_path}")
+                    if not CLI_MODE:
+                        print(f"Successfully built stemmer at: {built_stemmer_path}")
                     return built_stemmer_path
             except Exception as e:
-                print(f"Failed to build stemmer: {e}")
+                if not CLI_MODE:
+                    print(f"Failed to build stemmer: {e}")
         
-        print("ERROR: Could not find or build the stemmer. Stemming will be disabled.")
+        if not CLI_MODE:
+            print("ERROR: Could not find or build the stemmer. Stemming will be disabled.")
         return None
     
     def preprocess(self, token: Token, document: str) -> Token:
@@ -192,15 +203,17 @@ class StemPreprocessor(TokenPreprocessor):
             
             # If we got results with different length, something went wrong
             if len(stemmed_words) != len(words):
-                print(f"Warning: Stemmer returned {len(stemmed_words)} results for {len(words)} input words")
+                if not CLI_MODE:
+                    print(f"Warning: Stemmer returned {len(stemmed_words)} results for {len(words)} input words")
                 return words
                 
             return stemmed_words
         
         except subprocess.CalledProcessError as e:
-            print(f"Error running stemmer: {e}")
-            if hasattr(e, 'stderr'):
-                print(f"Stderr: {e.stderr}")
+            if not CLI_MODE:
+                print(f"Error running stemmer: {e}")
+                if hasattr(e, 'stderr'):
+                    print(f"Stderr: {e.stderr}")
             # Return original words on error
             return words
         
@@ -211,7 +224,8 @@ class StemPreprocessor(TokenPreprocessor):
                     try:
                         os.remove(path)
                     except Exception as e:
-                        print(f"Could not remove temporary file {path}: {e}")
+                        if not CLI_MODE:
+                            print(f"Could not remove temporary file {path}: {e}")
     
     def _stem_single_word(self, word: str) -> str:
         """

@@ -8,8 +8,11 @@ if [ -d "venv" ]; then
     source venv/bin/activate
 fi
 
-# Install required packages if they don't exist
-pip install rich
+# Install required packages silently (no "already satisfied" messages)
+pip install -q rich
 
-# Run the CLI application
+# Clear screen for a clean start
+clear
+
+# Run the CLI application with interactive mode
 python cli_app.py --interactive
