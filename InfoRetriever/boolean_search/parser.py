@@ -139,29 +139,9 @@ class TermNode(Node):
 
     def evaluate(self, index, all_docs=None):
         """Return the set of documents containing this term"""
-        # First try direct exact match
+        # Simplified implementation - just do a direct exact match
         if self.value in index:
             return set(index[self.value])
-        
-        # Try lowercased version
-        lower_value = self.value.lower()
-        if lower_value in index:
-            return set(index[lower_value])
-        
-        # Try to find case-insensitive match by looking through all keys
-        # (More expensive but ensures we find matches)
-        for key in index:
-            if key.lower() == lower_value:
-                return set(index[key])
-        
-        # If stemming might have been applied incorrectly, try matching term prefix
-        # This helps with terms like "Porsche" that might be stemmed differently
-        if len(lower_value) > 3:
-            prefix = lower_value[:4]  # Use first 4 characters as prefix
-            for key in index:
-                if key.startswith(prefix):
-                    # Found a potential match based on prefix
-                    return set(index[key])
         
         # No match found
         return set()  # Return empty set if term not found

@@ -1,9 +1,9 @@
 import json
+import json
 import time
 import argparse
 import re
 import os
-
 from .parser import BooleanParser, TermNode, AndNode, OrNode, NotNode
 
 class BooleanSearchEngine:
@@ -123,8 +123,32 @@ class BooleanSearchEngine:
     
     def _evaluate_node(self, node):
         """Evaluate a query node, returning a set of document IDs"""
-        # Use the node's evaluate method directly with the index and all_docs
-        return node.evaluate(self.index, self.all_docs)
+        if isinstance(node, TermNode):
+            # Look up the term in the index
+            return self.index.get(node.value, set())
+        
+        elif isinstance(node, NotNode):
+            # NOT operation: compute the complement
+            child_result = self._evaluate_node(node.child)
+            return self.all_docs - child_result
+        
+        elif isinstance(node, AndNode):
+            # AND operation: intersect the results
+            # Optimize by evaluating smaller set first
+            left_result = self._evaluate_node(node.left)
+            if not left_result:
+                return set()  # Short circuit if left is empty
+            
+            right_result = self._evaluate_node(node.right)
+            return left_result.intersection(right_result)
+        
+        elif isinstance(node, OrNode):
+            # OR operation: union the results
+            left_result = self._evaluate_node(node.left)
+            right_result = self._evaluate_node(node.right)
+            return left_result.union(right_result)
+        
+        return set()
     
     def debug_term(self, term):
         """Print information about a term's preprocessing and presence in the index"""

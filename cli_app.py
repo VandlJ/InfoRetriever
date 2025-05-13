@@ -251,8 +251,20 @@ class InfoRetrieverCLI:
             for doc_id in sorted(result_set)[:top_k]:
                 try:
                     # Try to find the document by ID in the original documents
+                    doc_data = None
+                    
+                    # Handle both numeric and string IDs (like "d1", "d2", etc)
                     if isinstance(doc_id, int) and doc_id < len(self.documents):
+                        # Numeric ID as index
                         doc_data = self.documents[doc_id]
+                    elif isinstance(doc_id, str):
+                        # String ID (e.g., "d1")
+                        for doc in self.documents:
+                            if isinstance(doc, dict) and doc.get('id') == doc_id:
+                                doc_data = doc
+                                break
+                    
+                    if doc_data:
                         doc = Document(
                             id=doc_id,
                             title=doc_data.get('title', ''),
@@ -261,6 +273,8 @@ class InfoRetrieverCLI:
                             metadata={'source': 'boolean_search'}
                         )
                         documents.append(doc)
+                    else:
+                        console.print(f"[yellow]Could not find document with ID {doc_id}[/yellow]")
                 except Exception as doc_e:
                     console.print(f"[yellow]Error creating Document for doc_id={doc_id}: {doc_e}[/yellow]")
             

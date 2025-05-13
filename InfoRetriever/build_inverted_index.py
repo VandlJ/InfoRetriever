@@ -169,7 +169,11 @@ class InvertedIndexBuilder:
             if isinstance(documents, list):
                 # Process list format
                 for i, doc in enumerate(documents):
-                    doc_id = i + 1  # Start IDs from 1
+                    # Use document ID if available, otherwise use index+1
+                    if isinstance(doc, dict) and 'id' in doc:
+                        doc_id = doc['id']
+                    else:
+                        doc_id = i + 1  # Start IDs from 1
                     
                     # Extract text
                     text = self._extract_document_text(doc)
